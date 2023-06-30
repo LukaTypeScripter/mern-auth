@@ -1,19 +1,41 @@
-import { useState } from "react";
-import {Link} from 'react-router-dom'
+import { useState,useEffect } from "react";
+import {Link, useNavigate} from 'react-router-dom'
 import {Form,Button,Row,Col} from 'react-bootstrap'
 import FormContainer from "../components/FormContainer";
-
-
-import React from 'react'
-
+import {useDispatch,useSelector} from "react-redux"
+import { toast } from "react-toastify";
+import Loader from "../components/Loader";
+import { useRegisterMutation } from "../slices/usersApiSlice";
+import { AuthState, setCredentials } from "../slices/authSlice";
 export const RegisterScreen = () => {
     const [name,setName] = useState('')
 const [email,setEmail] = useState('')
 const [password,setPassword] = useState('')
 const [confirmPassword,setConfirmPassword] = useState('')
+const [register,{isLoading}] = useRegisterMutation()
+const navigate = useNavigate()
+const dispatch = useDispatch()
+const { userInfo } = useSelector((state: { auth: AuthState }) => state.auth);
+
+useEffect(() => {
+    if(userInfo) {
+        navigate('/')
+    }
+},[navigate,userInfo])
+
 const submitHandler = async (e:React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    console.log('submit')
+    if(password !== confirmPassword) {
+        toast.error("passwords do not match")
+    }else {
+        try {
+            const res = await register({name,email,password}).unwrap();
+            dispatch(setCredentials({...res}))
+            navigate('/')
+        } catch (error) {
+            toast.error('invalid email or Password')
+        }
+    }
 
 }
   return (
@@ -56,7 +78,7 @@ const submitHandler = async (e:React.FormEvent<HTMLFormElement>) => {
             onChange={(e) => setConfirmPassword(e.target.value)}
             ></Form.Control>
             </Form.Group>
-            
+            {isLoading && (<Loader/>)}
             <Button type="submit" variant="primary" className="mt-3">
                 sign In
             </Button>
